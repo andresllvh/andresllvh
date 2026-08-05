@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Premium Particle Showcase — Solid Volume Sampling</title>
+  <title>Premium Particle Showcase — High Density Binary Mask Grid Sampling</title>
   <style>
     * {
       margin: 0;
@@ -31,15 +31,15 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 16px 20px;
-      border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 18px 24px;
+      border-radius: 14px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
     }
     .hud h1 {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
       letter-spacing: 0.08em;
       color: #73F7FF;
@@ -49,38 +49,48 @@
       font-size: 12px;
       color: #94A3B8;
     }
+    .hud .info-tag {
+      font-size: 11px;
+      font-weight: 600;
+      color: #10B981;
+      background: rgba(16, 185, 129, 0.15);
+      padding: 4px 8px;
+      border-radius: 4px;
+      width: fit-content;
+    }
     .controls {
       display: flex;
       gap: 10px;
-      margin-top: 8px;
+      margin-top: 6px;
     }
     button {
-      background: rgba(115, 247, 255, 0.1);
+      background: rgba(115, 247, 255, 0.08);
       border: 1px solid rgba(115, 247, 255, 0.3);
       color: #73F7FF;
-      padding: 6px 14px;
-      border-radius: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     button:hover, button.active {
       background: #73F7FF;
       color: #050816;
-      box-shadow: 0 0 12px rgba(115, 247, 255, 0.5);
+      box-shadow: 0 0 16px rgba(115, 247, 255, 0.6);
     }
   </style>
 </head>
 <body>
 
   <div class="hud">
-    <h1>Particle Showcase — Solid Area Sampling</h1>
-    <p>5,000 a 10,000 partículas preenchendo o volume interno dos logos.</p>
+    <h1>High-Fidelity Binary Mask Grid Sampling</h1>
+    <p>Amostragem uniforme direta da máscara binária — 6.000+ partículas sólidas.</p>
+    <div class="info-tag" id="particle-count">Partículas ativas: 6,400</div>
     <div class="controls">
-      <button class="active" onclick="switchLogo('glyph')">&lt;/&gt; Code</button>
+      <button class="active" onclick="switchLogo('glyph')">&lt;/&gt; Code Glyph</button>
       <button onclick="switchLogo('react')">React Atom</button>
-      <button onclick="switchLogo('ts')">TypeScript</button>
+      <button onclick="switchLogo('ts')">TypeScript TS</button>
     </div>
   </div>
 
@@ -99,7 +109,7 @@
     resize();
 
     // ─── MOUSE HOVER REPULSION ─────────────────────────────────────
-    const mouse = { x: -9999, y: -9999, radius: 100 };
+    const mouse = { x: -9999, y: -9999, radius: 110 };
     window.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
@@ -109,54 +119,55 @@
       mouse.y = -9999;
     });
 
-    // ─── OFFSCREEN CANVAS SAMPLING (AREA SAMPLING) ─────────────────
-    function generateLogoImageData(type) {
+    // ─── BINARY MASK RENDERER & GRID SAMPLING ─────────────────────
+    function sampleGridFromBinaryMask(type) {
+      const size = 360;
       const offCanvas = document.createElement('canvas');
       const offCtx = offCanvas.getContext('2d');
-      const size = 380;
       offCanvas.width = size;
       offCanvas.height = size;
-      const center = size / 2;
 
       offCtx.fillStyle = '#000000';
       offCtx.fillRect(0, 0, size, size);
       offCtx.fillStyle = '#FFFFFF';
       offCtx.strokeStyle = '#FFFFFF';
 
+      const center = size / 2;
+
       if (type === 'glyph') {
-        offCtx.lineWidth = 32;
+        offCtx.lineWidth = 36;
         offCtx.lineCap = 'round';
         offCtx.lineJoin = 'round';
 
         // '<'
         offCtx.beginPath();
-        offCtx.moveTo(110, 110);
-        offCtx.lineTo(60, 190);
-        offCtx.lineTo(110, 270);
+        offCtx.moveTo(110, 100);
+        offCtx.lineTo(50, 180);
+        offCtx.lineTo(110, 260);
         offCtx.stroke();
 
         // '/'
         offCtx.beginPath();
-        offCtx.moveTo(210, 80);
-        offCtx.lineTo(170, 300);
+        offCtx.moveTo(210, 70);
+        offCtx.lineTo(165, 290);
         offCtx.stroke();
 
         // '>'
         offCtx.beginPath();
-        offCtx.moveTo(270, 110);
-        offCtx.lineTo(320, 190);
-        offCtx.lineTo(270, 270);
+        offCtx.moveTo(260, 100);
+        offCtx.lineTo(320, 180);
+        offCtx.lineTo(260, 260);
         offCtx.stroke();
 
       } else if (type === 'react') {
-        // Center nucleus
+        // Nucleus
         offCtx.beginPath();
         offCtx.arc(center, center, 32, 0, Math.PI * 2);
         offCtx.fill();
 
-        // 3 thick orbits
-        offCtx.lineWidth = 30;
-        const rx = 130;
+        // 3 orbits
+        offCtx.lineWidth = 32;
+        const rx = 135;
         const ry = 48;
         [0, Math.PI / 3, (2 * Math.PI) / 3].forEach(angle => {
           offCtx.save();
@@ -170,140 +181,160 @@
 
       } else if (type === 'ts') {
         // Outer rounded box
+        offCtx.lineWidth = 30;
+        offCtx.beginPath();
+        offCtx.roundRect(45, 45, 270, 270, 42);
+        offCtx.stroke();
+
+        // Bold 'T'
         offCtx.lineWidth = 26;
+        offCtx.lineCap = 'square';
         offCtx.beginPath();
-        offCtx.roundRect(50, 50, 280, 280, 40);
+        offCtx.moveTo(105, 135);
+        offCtx.lineTo(190, 135);
+        offCtx.moveTo(147, 135);
+        offCtx.lineTo(147, 255);
         offCtx.stroke();
 
-        // 'T'
-        offCtx.lineWidth = 22;
+        // Bold 'S'
+        offCtx.lineWidth = 24;
+        offCtx.lineCap = 'round';
+        offCtx.lineJoin = 'round';
         offCtx.beginPath();
-        offCtx.moveTo(110, 140);
-        offCtx.lineTo(190, 140);
-        offCtx.moveTo(150, 140);
-        offCtx.lineTo(150, 260);
-        offCtx.stroke();
-
-        // 'S'
-        offCtx.beginPath();
-        offCtx.moveTo(270, 140);
-        offCtx.lineTo(220, 140);
-        offCtx.lineTo(220, 195);
-        offCtx.lineTo(270, 195);
+        offCtx.moveTo(270, 135);
+        offCtx.lineTo(215, 135);
+        offCtx.lineTo(215, 190);
+        offCtx.lineTo(270, 190);
         offCtx.lineTo(270, 250);
-        offCtx.lineTo(220, 250);
+        offCtx.lineTo(215, 250);
         offCtx.stroke();
       }
 
-      return offCtx.getImageData(0, 0, size, size);
-    }
-
-    // ─── PARTICLE CREATION (AREA SAMPLING) ─────────────────────────
-    const NUM_PARTICLES = 6000;
-    const particles = [];
-
-    function sampleParticlesFromLogo(type) {
-      const imgData = generateLogoImageData(type);
+      const imgData = offCtx.getImageData(0, 0, size, size);
       const data = imgData.data;
-      const size = imgData.width;
 
-      const validPixels = [];
-      for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
+      // UNIFORM GRID SAMPLING (step = 3px)
+      const points = [];
+      const step = 3;
+      for (let y = 0; y < size; y += step) {
+        for (let x = 0; x < size; x += step) {
           const idx = (y * size + x) * 4;
-          if (data[idx] > 50) { // alpha / white threshold
-            validPixels.push({ x: x - size / 2, y: y - size / 2 });
+          if (data[idx] > 100) { // White pixel inside binary mask
+            points.push({
+              x: width / 2 + (x - center),
+              y: height / 2 + (y - center)
+            });
           }
         }
       }
-
-      const targets = [];
-      for (let i = 0; i < NUM_PARTICLES; i++) {
-        const p = validPixels[Math.floor(Math.random() * validPixels.length)];
-        targets.push({
-          x: width / 2 + p.x + (Math.random() - 0.5) * 0.8,
-          y: height / 2 + p.y + (Math.random() - 0.5) * 0.8
-        });
-      }
-      return targets;
+      return points;
     }
 
-    // Initialize particles
-    let currentTargets = sampleParticlesFromLogo('glyph');
+    // ─── INITIALIZE PARTICLES ──────────────────────────────────────
+    let particles = [];
+    let currentLogo = 'glyph';
 
-    for (let i = 0; i < NUM_PARTICLES; i++) {
-      const sizes = [0.8, 1.0, 1.3, 1.5];
-      particles.push({
-        x: width / 2 + (Math.random() - 0.5) * width,
-        y: height / 2 + (Math.random() - 0.5) * height,
-        targetX: currentTargets[i].x,
-        targetY: currentTargets[i].y,
-        vx: 0,
-        vy: 0,
-        size: sizes[Math.floor(Math.random() * sizes.length)],
-        alpha: 0.6 + Math.random() * 0.4,
-        seed: Math.random() * 1000,
-        ease: 0.05 + Math.random() * 0.03
-      });
+    function initParticles(type) {
+      const gridPoints = sampleGridFromBinaryMask(type);
+      document.getElementById('particle-count').textContent = `Partículas sólidas: ${gridPoints.length.toLocaleString()}`;
+
+      const sizes = [0.9, 1.1, 1.3, 1.5];
+
+      // Match or adjust particles array
+      if (particles.length < gridPoints.length) {
+        const diff = gridPoints.length - particles.length;
+        for (let i = 0; i < diff; i++) {
+          particles.push({
+            x: width / 2,
+            y: height / 2,
+            targetX: width / 2,
+            targetY: height / 2,
+            vx: 0,
+            vy: 0,
+            size: sizes[Math.floor(Math.random() * sizes.length)],
+            alpha: 0.7 + Math.random() * 0.3,
+            seed: Math.random() * 1000
+          });
+        }
+      }
+
+      // Assign grid targets exactly
+      for (let i = 0; i < gridPoints.length; i++) {
+        particles[i].targetX = gridPoints[i].x;
+        particles[i].targetY = gridPoints[i].y;
+        if (particles[i].x === width / 2) {
+          particles[i].x = gridPoints[i].x;
+          particles[i].y = gridPoints[i].y;
+        }
+      }
+
+      // Trim excess if any
+      particles = particles.slice(0, gridPoints.length);
     }
 
     function switchLogo(type) {
       document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
       event.target.classList.add('active');
-
-      const newTargets = sampleParticlesFromLogo(type);
-      for (let i = 0; i < NUM_PARTICLES; i++) {
-        particles[i].targetX = newTargets[i].x;
-        particles[i].targetY = newTargets[i].y;
-      }
+      currentLogo = type;
+      initParticles(type);
     }
+
+    initParticles('glyph');
 
     // ─── RENDER LOOP ───────────────────────────────────────────────
     let time = 0;
     function animate() {
-      time += 0.015;
+      time += 0.012;
 
-      // Dark background with subtle trail blur
+      // Dark background
       ctx.fillStyle = '#050816';
       ctx.fillRect(0, 0, width, height);
 
-      // Render glowing particles
-      ctx.shadowColor = '#73F7FF';
-      ctx.shadowBlur = 4;
+      // Radial cyan glow under logo
+      const glowGrad = ctx.createRadialGradient(width/2, height/2, 20, width/2, height/2, 250);
+      glowGrad.addColorStop(0, 'rgba(115, 247, 255, 0.08)');
+      glowGrad.addColorStop(1, 'rgba(5, 8, 22, 0)');
+      ctx.fillStyle = glowGrad;
+      ctx.fillRect(0, 0, width, height);
 
-      for (let i = 0; i < NUM_PARTICLES; i++) {
+      // Cyan particle styling
+      ctx.shadowColor = '#73F7FF';
+      ctx.shadowBlur = 3;
+
+      const len = particles.length;
+      for (let i = 0; i < len; i++) {
         const p = particles[i];
 
-        // 1. Organic noise micro-oscillations (amplitude 0.3 to 1.2px)
-        const noiseX = Math.sin(time + p.seed) * 0.8;
-        const noiseY = Math.cos(time * 0.9 + p.seed) * 0.8;
+        // Subtlest organic noise micro-oscillation (0.3px to 0.7px max amplitude)
+        const noiseX = Math.sin(time * 1.2 + p.seed) * 0.5;
+        const noiseY = Math.cos(time * 1.1 + p.seed * 0.7) * 0.5;
 
         const tx = p.targetX + noiseX;
         const ty = p.targetY + noiseY;
 
-        // 2. Mouse Repulsion
+        // Mouse Repulsion
         const dx = p.x - mouse.x;
         const dy = p.y - mouse.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         let repelX = 0, repelY = 0;
         if (dist < mouse.radius && dist > 0) {
-          const force = (1 - dist / mouse.radius) * 25;
+          const force = (1 - dist / mouse.radius) * 22;
           repelX = (dx / dist) * force;
           repelY = (dy / dist) * force;
         }
 
-        // 3. Smooth Spring Convergence
-        p.vx += (tx + repelX - p.x) * p.ease;
-        p.vy += (ty + repelY - p.y) * p.ease;
-        p.vx *= 0.82;
-        p.vy *= 0.82;
+        // Smooth spring movement to grid position
+        p.vx += (tx + repelX - p.x) * 0.08;
+        p.vy += (ty + repelY - p.y) * 0.08;
+        p.vx *= 0.78;
+        p.vy *= 0.78;
 
         p.x += p.vx;
         p.y += p.vy;
 
-        // 4. Draw particle
-        ctx.fillStyle = `rgba(115, 247, 255, ${p.alpha * (0.8 + 0.2 * Math.sin(time * 2 + p.seed))})`;
+        // Render particle
+        ctx.fillStyle = `rgba(115, 247, 255, ${p.alpha * (0.85 + 0.15 * Math.sin(time * 2 + p.seed))})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
