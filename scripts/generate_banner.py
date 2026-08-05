@@ -355,27 +355,54 @@ def generate_react_logo(cx: float, cy: float, r: float, n_points: int = 160) -> 
     return points[:n_points]
 
 
-def generate_node_logo(cx: float, cy: float, size: float, n_points: int = 160) -> List[Tuple[float, float]]:
-    """Generate point cloud for tech hexagon / Node.js logo."""
+def generate_ts_logo(cx: float, cy: float, size: float, n_points: int = 160) -> List[Tuple[float, float]]:
+    """Generate point cloud for TypeScript logo (T + S in a rounded square)."""
     points = []
-    half = size / 2
+    half = size * 0.48
 
-    # Hexagon outer ring
-    hex_pts = int(n_points * 0.6)
-    for i in range(hex_pts):
-        angle = 2 * math.pi * i / hex_pts - math.pi / 6
-        r = half * 0.95
-        x = cx + r * math.cos(angle)
-        y = cy + r * math.sin(angle)
+    # Outer square border
+    border_pts = int(n_points * 0.45)
+    for i in range(border_pts):
+        t = i / border_pts
+        if t < 0.25:
+            x = cx - half + 4 * t * half
+            y = cy - half
+        elif t < 0.5:
+            x = cx + half
+            y = cy - half + 4 * (t - 0.25) * half
+        elif t < 0.75:
+            x = cx + half - 4 * (t - 0.5) * half
+            y = cy + half
+        else:
+            x = cx - half
+            y = cy + half - 4 * (t - 0.75) * half
         points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
 
-    # Inner triangle / glyph
-    rem = n_points - hex_pts
-    r_in = half * 0.45
-    for i in range(rem):
-        angle = 2 * math.pi * i / rem + math.pi / 2
-        x = cx + r_in * math.cos(angle)
-        y = cy + r_in * math.sin(angle)
+    # "T" letter (left side inside square)
+    t_pts = int(n_points * 0.25)
+    t_cx = cx - half * 0.35
+    for i in range(t_pts // 3):
+        x = t_cx - half * 0.3 + (half * 0.6) * i / max(t_pts // 3, 1)
+        y = cy - half * 0.4
+        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
+    for i in range(t_pts - t_pts // 3):
+        x = t_cx
+        y = cy - half * 0.4 + (half * 0.8) * i / max(t_pts - t_pts // 3, 1)
+        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
+
+    # "S" letter (right side inside square)
+    s_pts = n_points - len(points)
+    s_cx = cx + half * 0.35
+    for i in range(s_pts):
+        t = i / max(s_pts, 1)
+        if t < 0.5:
+            angle = math.pi * 0.8 + t * 2 * math.pi * 0.7
+            x = s_cx + half * 0.25 * math.cos(angle)
+            y = cy - half * 0.2 + t * half * 0.4
+        else:
+            angle = math.pi * 0.2 + (t - 0.5) * 2 * math.pi * 0.7
+            x = s_cx + half * 0.25 * math.cos(angle)
+            y = cy + half * 0.05 + (t - 0.5) * half * 0.4
         points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
 
     return points[:n_points]
@@ -686,18 +713,18 @@ def generate_portrait_frame_svg(portrait_x: float, portrait_y: float,
                  f'font-size="11" font-family="\'JetBrains Mono\', monospace" '
                  f'font-weight="700" opacity="0.9">VISUAL.MAP</text>')
 
-    # Cyber corner brackets (matching Screenshots 1, 2, 3!)
+    # Cyber corner brackets (fixed path Y coordinates!)
     arm = 14
     c = ACCENT_CYAN
     sw = 1.8
     # Top-Left
     lines.append(f'<path d="M{fx} {fy+arm} V{fy} H{fx+arm}" stroke="{c}" stroke-width="{sw}" fill="none"/>')
     # Top-Right
-    lines.append(f'<path d="M{fx+fw-arm} {fy} H{fx+fw} V{fx+fw-arm}" stroke="{c}" stroke-width="{sw}" fill="none"/>')
+    lines.append(f'<path d="M{fx+fw-arm} {fy} H{fx+fw} V{fy+arm}" stroke="{c}" stroke-width="{sw}" fill="none"/>')
     # Bottom-Left
     lines.append(f'<path d="M{fx} {fy+fh-arm} V{fy+fh} H{fx+arm}" stroke="{c}" stroke-width="{sw}" fill="none"/>')
     # Bottom-Right
-    lines.append(f'<path d="M{fx+fw-arm} {fy+fh} H{fx+fw} V{fx+fh-arm}" stroke="{c}" stroke-width="{sw}" fill="none"/>')
+    lines.append(f'<path d="M{fx+fw-arm} {fy+fh} H{fx+fw} V{fy+fh-arm}" stroke="{c}" stroke-width="{sw}" fill="none"/>')
 
     return "\n    ".join(lines)
 
@@ -1013,18 +1040,18 @@ def main():
 
     glyph_pts = generate_code_glyph(logo_cx, logo_cy, logo_r * 1.5, n_travellers)
     react_pts = generate_react_logo(logo_cx, logo_cy, logo_r * 1.1, n_travellers)
-    node_pts = generate_node_logo(logo_cx, logo_cy, logo_r * 1.4, n_travellers)
+    ts_pts = generate_ts_logo(logo_cx, logo_cy, logo_r * 1.4, n_travellers)
 
     # Match via approximate optimal transport
     print("  Matching Code Glyph -> React...")
     glyph_to_react = match_points_ot(glyph_pts, react_pts)
     react_pts_ordered = [react_pts[i] for i in glyph_to_react]
 
-    print("  Matching React -> Node.js...")
-    react_to_node = match_points_ot(react_pts_ordered, node_pts)
-    node_pts_ordered = [node_pts[i] for i in react_to_node]
+    print("  Matching React -> TypeScript...")
+    react_to_ts = match_points_ot(react_pts_ordered, ts_pts)
+    ts_pts_ordered = [ts_pts[i] for i in react_to_ts]
 
-    traveller_frames = [glyph_pts, react_pts_ordered, node_pts_ordered]
+    traveller_frames = [glyph_pts, react_pts_ordered, ts_pts_ordered]
 
     # 7. Generate SVGs
     print("[7/7] Generating SVGs...")
