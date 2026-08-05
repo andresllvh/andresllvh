@@ -972,9 +972,9 @@ def main():
     logo_cy = portrait_y + portrait_h / 2
     logo_r = min(portrait_w, portrait_h) * 0.38
 
-    glyph_pts = generate_binary_mask_grid_points("code_glyph", logo_cx, logo_cy, logo_r * 1.3, step=4)
-    react_pts = generate_binary_mask_grid_points("react", logo_cx, logo_cy, logo_r * 1.1, step=4)
-    ts_pts = generate_binary_mask_grid_points("ts", logo_cx, logo_cy, logo_r * 1.3, step=4)
+    glyph_pts = generate_binary_mask_grid_points("code_glyph", logo_cx, logo_cy, logo_r * 1.3, step=11)
+    react_pts = generate_binary_mask_grid_points("react", logo_cx, logo_cy, logo_r * 1.1, step=11)
+    ts_pts = generate_binary_mask_grid_points("ts", logo_cx, logo_cy, logo_r * 1.3, step=11)
 
     max_pts = max(len(glyph_pts), len(react_pts), len(ts_pts))
 
