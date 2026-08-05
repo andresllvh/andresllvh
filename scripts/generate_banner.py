@@ -833,10 +833,13 @@ def build_svg(dots: np.ndarray,
     # ─── TRAVELLER LAYER (logo morphing) ─────────────────────
     if traveller_frames and len(traveller_frames) >= 3:
         n_travellers = len(traveller_frames[0])
-        traveller_color = ACCENT_GREEN if is_dark else ACCENT_TEAL
+        traveller_color = ACCENT_CYAN if is_dark else ACCENT_TEAL
 
         svg_parts.append(f'  <!-- Traveller Layer: {n_travellers} morphing dots -->')
-        svg_parts.append(f'  <g id="travellers">')
+        svg_parts.append(f'  <g id="travellers" opacity="0">')
+        svg_parts.append(f'    <animate attributeName="opacity" '
+                         f'values="0;0;1;1;1;1;1;1;0" keyTimes="0;0.211;0.302;0.443;0.535;0.676;0.768;0.908;1" '
+                         f'dur="{loop_duration}s" begin="{intro_duration}s" repeatCount="indefinite"/>')
 
         # Synchronized KeyTimes: travellers visible ONLY during logo phase
         # 0.0-0.211: portrait phase (travellers hidden, opacity=0)

@@ -353,7 +353,8 @@
     </g>
   </g>
   <!-- Traveller Layer: 2343 morphing dots -->
-  <g id="travellers">
+  <g id="travellers" opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;1;1;1;1;0" keyTimes="0;0.211;0.302;0.443;0.535;0.676;0.768;0.908;1" dur="14.2s" begin="3.2s" repeatCount="indefinite"/>
     <circle r="1.2800000000000002">
       <animate attributeName="cx" values="244.8;244.8;249.7;249.7;228.1;228.1;215.5;215.5;244.8" keyTimes="0;0.211;0.302;0.443;0.535;0.676;0.768;0.908;1" dur="14.2s" begin="3.2s" repeatCount="indefinite"/>
       <animate attributeName="cy" values="359.4;359.4;256.2;256.2;292.1;292.1;256.2;256.2;359.4" keyTimes="0;0.211;0.302;0.443;0.535;0.676;0.768;0.908;1" dur="14.2s" begin="3.2s" repeatCount="indefinite"/>
