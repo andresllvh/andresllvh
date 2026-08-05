@@ -2,10 +2,10 @@
 <!-- BANNER — Theme-aware animated terminal portrait               -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/andresllvh/andresllvh/main/dark.svg#gh-dark-mode-only" alt="André Santos" width="100%" />
-  <img src="https://raw.githubusercontent.com/andresllvh/andresllvh/main/light.svg#gh-light-mode-only" alt="André Santos" width="100%" />
-</div>
+<p align="center">
+  <img src="./dark.svg#gh-dark-mode-only" alt="André Santos" width="100%" />
+  <img src="./light.svg#gh-light-mode-only" alt="André Santos" width="100%" />
+</p>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- STATS CARDS — Fully themed GitHub Stats                       -->

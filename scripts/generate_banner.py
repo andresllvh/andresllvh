@@ -51,7 +51,7 @@ PORTRAIT_AREA_PCT = 0.38  # left 38%
 # ─── INFO PANEL DATA ──────────────────────────────────────────────
 INFO_ROWS = [
     ("Subject", "André Santos"),
-    ("Role", "Dev Software Jr | IA & Automação"),
+    ("Role", "Dev Software Jr | IA &amp; Automação"),
     ("Origin", "João Pessoa — PB, Brasil"),
     ("Education", "Análise e Desenv. de Sistemas"),
     ("Status", "Building • Learning • Shipping"),
