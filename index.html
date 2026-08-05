@@ -206,11 +206,11 @@
 
       } else if (type === 'react') {
         offCtx.beginPath();
-        offCtx.arc(center, center, 32, 0, Math.PI * 2);
+        offCtx.arc(center, center, 24, 0, Math.PI * 2);
         offCtx.fill();
 
-        offCtx.lineWidth = 32;
-        const rx = 135;
+        offCtx.lineWidth = 18;
+        const rx = 145;
         const ry = 48;
         [0, Math.PI / 3, (2 * Math.PI) / 3].forEach(angle => {
           offCtx.save();

@@ -300,13 +300,13 @@ def generate_binary_mask_grid_points(logo_type: str, cx: float, cy: float, size:
 
     elif logo_type == "react":
         # Nucleus
-        draw.ellipse([mid - 32, mid - 32, mid + 32, mid + 32], fill=255)
-        rx = 135
+        draw.ellipse([mid - 24, mid - 24, mid + 24, mid + 24], fill=255)
+        rx = 145
         ry = 48
         for angle in [0, 60, 120]:
             temp = Image.new("L", (canvas_size, canvas_size), 0)
             tdraw = ImageDraw.Draw(temp)
-            tdraw.ellipse([mid - rx, mid - ry, mid + rx, mid + ry], fill=0, outline=255, width=32)
+            tdraw.ellipse([mid - rx, mid - ry, mid + rx, mid + ry], fill=0, outline=255, width=18)
             temp = temp.rotate(-angle, center=(mid, mid), resample=Image.BICUBIC)
             img = ImageChops.lighter(img, temp)
 
