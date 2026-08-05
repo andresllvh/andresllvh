@@ -276,136 +276,75 @@ def dots_to_path_runs(dots: np.ndarray, ox: float, oy: float,
     return "".join(runs)
 
 
-# ─── LOGO POINT CLOUDS ───────────────────────────────────────────
-def generate_code_glyph(cx: float, cy: float, size: float, n_points: int = 160) -> List[Tuple[float, float]]:
+# ─── LOGO POINT CLOUDS (SOLID AREA IMAGEDATA SAMPLING) ────────────
+def sample_logo_area_particles(logo_type: str, cx: float, cy: float, size: float, n_points: int = 240) -> List[Tuple[float, float]]:
     """
-    Generate point cloud for </ > code glyph logo (matching Screenshot 2!).
-    Left bracket '<', center slash '/', right bracket '>'.
+    Sample particles uniformly across the SOLID INTERIOR AREA of the logo (ImageData sampling).
+    Fulfills rule: 'Sempre que alpha > 0, criar uma partícula' to fill entire solid volume.
     """
+    from PIL import Image, ImageDraw
+
+    canvas_w, canvas_h = 400, 400
+    img = Image.new("L", (canvas_w, canvas_h), 0)
+    draw = ImageDraw.Draw(img)
+    mid_x, mid_y = canvas_w / 2.0, canvas_h / 2.0
+
+    if logo_type == "code_glyph":
+        # Draw solid filled left bracket '<', slash '/', right bracket '>'
+        sw = 32
+        # '<'
+        draw.line([(100, 110), (50, 200), (100, 290)], fill=255, width=sw)
+        # '/'
+        draw.line([(220, 90), (170, 310)], fill=255, width=sw)
+        # '>'
+        draw.line([(290, 110), (340, 200), (290, 290)], fill=255, width=sw)
+
+    elif logo_type == "react":
+        # Draw 3 thick filled elliptical orbits + solid center nucleus
+        r = 140
+        # Nucleus
+        draw.ellipse([mid_x - 32, mid_y - 32, mid_x + 32, mid_y + 32], fill=255)
+
+        # Draw 3 thick ellipses onto temp masks and rotate
+        for angle in [0, 60, 120]:
+            temp = Image.new("L", (canvas_w, canvas_h), 0)
+            tdraw = ImageDraw.Draw(temp)
+            tdraw.ellipse([mid_x - r, mid_y - r * 0.38, mid_x + r, mid_y + r * 0.38], fill=0, outline=255, width=34)
+            from PIL import ImageChops
+            img = ImageChops.lighter(img, temp)
+
+    elif logo_type == "ts":
+        # Solid rounded square + filled T and S
+        draw.rounded_rectangle([60, 60, 340, 340], radius=40, fill=0, outline=255, width=28)
+        # 'T'
+        draw.line([(110, 140), (190, 140)], fill=255, width=22)
+        draw.line([(150, 140), (150, 260)], fill=255, width=22)
+        # 'S'
+        draw.line([(220, 140), (270, 140)], fill=255, width=20)
+        draw.line([(220, 140), (220, 200)], fill=255, width=20)
+        draw.line([(220, 200), (270, 200)], fill=255, width=20)
+        draw.line([(270, 200), (270, 260)], fill=255, width=20)
+        draw.line([(220, 260), (270, 260)], fill=255, width=20)
+
+    # Convert to numpy array and sample
+    arr = np.array(img)
+    ys, xs = np.where(arr > 40)
+    if len(ys) == 0:
+        return [(cx, cy)] * n_points
+
+    # Random uniform choice across interior pixels
+    indices = np.random.choice(len(ys), size=n_points, replace=True)
+    scale = size / (canvas_w * 0.75)
+
     points = []
-    w = size * 0.95
-    h = size * 0.85
+    for idx in indices:
+        py = ys[idx] + random.gauss(0, 0.4)
+        px = xs[idx] + random.gauss(0, 0.4)
+        nx = (px - mid_x) * scale + cx
+        ny = (py - mid_y) * scale + cy
+        points.append((nx, ny))
 
-    left_x = cx - w * 0.35
-    right_x = cx + w * 0.35
-
-    pts_per_elem = n_points // 3
-
-    # 1. Left bracket '<'
-    half_pts = pts_per_elem // 2
-    for i in range(half_pts):
-        t = i / max(half_pts - 1, 1)
-        x = left_x + t * (w * 0.22)
-        y = cy - h * 0.42 + t * (h * 0.42)
-        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
-    for i in range(half_pts):
-        t = i / max(half_pts - 1, 1)
-        x = left_x + (w * 0.22) - t * (w * 0.22)
-        y = cy + t * (h * 0.42)
-        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
-
-    # 2. Center slash '/'
-    slash_pts = pts_per_elem
-    for i in range(slash_pts):
-        t = i / max(slash_pts - 1, 1)
-        x = cx + (w * 0.12) - t * (w * 0.24)
-        y = cy - h * 0.46 + t * (h * 0.92)
-        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
-
-    # 3. Right bracket '>'
-    rem = n_points - len(points)
-    half_rem = rem // 2
-    for i in range(half_rem):
-        t = i / max(half_rem - 1, 1)
-        x = right_x - (w * 0.22) + t * (w * 0.22)
-        y = cy - h * 0.42 + t * (h * 0.42)
-        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
-    for i in range(rem - half_rem):
-        t = i / max((rem - half_rem) - 1, 1)
-        x = right_x - t * (w * 0.22)
-        y = cy + t * (h * 0.42)
-        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
-
-    return points[:n_points]
-
-
-def generate_react_logo(cx: float, cy: float, r: float, n_points: int = 160) -> List[Tuple[float, float]]:
-    """Generate point cloud for React atom logo (matching Screenshot 1!)."""
-    points = []
-    # Center nucleus
-    n_nucleus = 16
-    for _ in range(n_nucleus):
-        angle = random.uniform(0, 2 * math.pi)
-        dist = random.uniform(0, r * 0.12)
-        points.append((cx + dist * math.cos(angle), cy + dist * math.sin(angle)))
-
-    # 3 elliptical orbits at 0°, 60°, 120°
-    remaining = n_points - n_nucleus
-    orbit_angles = [0, math.pi / 3, 2 * math.pi / 3]
-    for oi, orbit_angle in enumerate(orbit_angles):
-        pts_this_orbit = remaining // 3 + (1 if oi < remaining % 3 else 0)
-        for i in range(pts_this_orbit):
-            t = 2 * math.pi * i / pts_this_orbit
-            ex = r * math.cos(t)
-            ey = r * 0.36 * math.sin(t)
-            rx = ex * math.cos(orbit_angle) - ey * math.sin(orbit_angle)
-            ry = ex * math.sin(orbit_angle) + ey * math.cos(orbit_angle)
-            points.append((cx + rx + random.gauss(0, 0.4), cy + ry + random.gauss(0, 0.4)))
-
-    return points[:n_points]
-
-
-def generate_ts_logo(cx: float, cy: float, size: float, n_points: int = 160) -> List[Tuple[float, float]]:
-    """Generate point cloud for TypeScript logo (T + S in a rounded square)."""
-    points = []
-    half = size * 0.48
-
-    # Outer square border
-    border_pts = int(n_points * 0.45)
-    for i in range(border_pts):
-        t = i / border_pts
-        if t < 0.25:
-            x = cx - half + 4 * t * half
-            y = cy - half
-        elif t < 0.5:
-            x = cx + half
-            y = cy - half + 4 * (t - 0.25) * half
-        elif t < 0.75:
-            x = cx + half - 4 * (t - 0.5) * half
-            y = cy + half
-        else:
-            x = cx - half
-            y = cy + half - 4 * (t - 0.75) * half
-        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
-
-    # "T" letter (left side inside square)
-    t_pts = int(n_points * 0.25)
-    t_cx = cx - half * 0.35
-    for i in range(t_pts // 3):
-        x = t_cx - half * 0.3 + (half * 0.6) * i / max(t_pts // 3, 1)
-        y = cy - half * 0.4
-        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
-    for i in range(t_pts - t_pts // 3):
-        x = t_cx
-        y = cy - half * 0.4 + (half * 0.8) * i / max(t_pts - t_pts // 3, 1)
-        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
-
-    # "S" letter (right side inside square)
-    s_pts = n_points - len(points)
-    s_cx = cx + half * 0.35
-    for i in range(s_pts):
-        t = i / max(s_pts, 1)
-        if t < 0.5:
-            angle = math.pi * 0.8 + t * 2 * math.pi * 0.7
-            x = s_cx + half * 0.25 * math.cos(angle)
-            y = cy - half * 0.2 + t * half * 0.4
-        else:
-            angle = math.pi * 0.2 + (t - 0.5) * 2 * math.pi * 0.7
-            x = s_cx + half * 0.25 * math.cos(angle)
-            y = cy + half * 0.05 + (t - 0.5) * half * 0.4
-        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
-
-    return points[:n_points]
+    return points
 
 
 # ─── OPTIMAL TRANSPORT MATCHING ──────────────────────────────────
@@ -1036,11 +975,11 @@ def main():
     logo_cy = portrait_y + portrait_h / 2
     logo_r = min(portrait_w, portrait_h) * 0.38
 
-    n_travellers = 160  # Optimized traveller count for clean morph (Screenshots 1 & 2!)
+    n_travellers = 200  # High density solid area particles
 
-    glyph_pts = generate_code_glyph(logo_cx, logo_cy, logo_r * 1.5, n_travellers)
-    react_pts = generate_react_logo(logo_cx, logo_cy, logo_r * 1.1, n_travellers)
-    ts_pts = generate_ts_logo(logo_cx, logo_cy, logo_r * 1.4, n_travellers)
+    glyph_pts = sample_logo_area_particles("code_glyph", logo_cx, logo_cy, logo_r * 1.4, n_travellers)
+    react_pts = sample_logo_area_particles("react", logo_cx, logo_cy, logo_r * 1.1, n_travellers)
+    ts_pts = sample_logo_area_particles("ts", logo_cx, logo_cy, logo_r * 1.3, n_travellers)
 
     # Match via approximate optimal transport
     print("  Matching Code Glyph -> React...")
