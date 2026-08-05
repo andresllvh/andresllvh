@@ -123,26 +123,29 @@ def load_and_prepare_photo(path: str, cols: int, rows: int) -> Image.Image:
 
 
 def apply_enhancements(img: Image.Image) -> Image.Image:
-    """Apply contrast, autocontrast, and unsharp mask as specified."""
+    """Apply contrast, brightness, and unsharp mask for realistic crisp dithering."""
     from PIL import ImageEnhance
 
     # Convert to RGB for processing
     if img.mode == "RGBA":
-        # Composite on white background for light, on dark for dark
         bg = Image.new("RGBA", img.size, (255, 255, 255, 255))
         img = Image.alpha_composite(bg, img).convert("RGB")
     elif img.mode != "RGB":
         img = img.convert("RGB")
 
-    # Contrast 1.3×
+    # Moderate contrast enhancement so skin highlights stay clean
     enhancer = ImageEnhance.Contrast(img)
-    img = enhancer.enhance(1.3)
+    img = enhancer.enhance(1.15)
 
-    # Autocontrast with cutoff=1
-    img = ImageOps.autocontrast(img, cutoff=1)
+    # Slight brightness boost to keep skin tones clear (matching Screenshot 3!)
+    brightener = ImageEnhance.Brightness(img)
+    img = brightener.enhance(1.08)
 
-    # UnsharpMask
-    img = img.filter(ImageFilter.UnsharpMask(radius=3, percent=140))
+    # Autocontrast with cutoff=2
+    img = ImageOps.autocontrast(img, cutoff=2)
+
+    # UnsharpMask for sharp facial features, glasses, suit lapels
+    img = img.filter(ImageFilter.UnsharpMask(radius=2, percent=110))
 
     return img
 
@@ -274,11 +277,63 @@ def dots_to_path_runs(dots: np.ndarray, ox: float, oy: float,
 
 
 # ─── LOGO POINT CLOUDS ───────────────────────────────────────────
-def generate_react_logo(cx: float, cy: float, r: float, n_points: int = 300) -> List[Tuple[float, float]]:
-    """Generate point cloud for React atom logo."""
+def generate_code_glyph(cx: float, cy: float, size: float, n_points: int = 160) -> List[Tuple[float, float]]:
+    """
+    Generate point cloud for </ > code glyph logo (matching Screenshot 2!).
+    Left bracket '<', center slash '/', right bracket '>'.
+    """
+    points = []
+    w = size * 0.95
+    h = size * 0.85
+
+    left_x = cx - w * 0.35
+    right_x = cx + w * 0.35
+
+    pts_per_elem = n_points // 3
+
+    # 1. Left bracket '<'
+    half_pts = pts_per_elem // 2
+    for i in range(half_pts):
+        t = i / max(half_pts - 1, 1)
+        x = left_x + t * (w * 0.22)
+        y = cy - h * 0.42 + t * (h * 0.42)
+        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
+    for i in range(half_pts):
+        t = i / max(half_pts - 1, 1)
+        x = left_x + (w * 0.22) - t * (w * 0.22)
+        y = cy + t * (h * 0.42)
+        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
+
+    # 2. Center slash '/'
+    slash_pts = pts_per_elem
+    for i in range(slash_pts):
+        t = i / max(slash_pts - 1, 1)
+        x = cx + (w * 0.12) - t * (w * 0.24)
+        y = cy - h * 0.46 + t * (h * 0.92)
+        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
+
+    # 3. Right bracket '>'
+    rem = n_points - len(points)
+    half_rem = rem // 2
+    for i in range(half_rem):
+        t = i / max(half_rem - 1, 1)
+        x = right_x - (w * 0.22) + t * (w * 0.22)
+        y = cy - h * 0.42 + t * (h * 0.42)
+        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
+    for i in range(rem - half_rem):
+        t = i / max((rem - half_rem) - 1, 1)
+        x = right_x - t * (w * 0.22)
+        y = cy + t * (h * 0.42)
+        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
+
+    return points[:n_points]
+
+
+def generate_react_logo(cx: float, cy: float, r: float, n_points: int = 160) -> List[Tuple[float, float]]:
+    """Generate point cloud for React atom logo (matching Screenshot 1!)."""
     points = []
     # Center nucleus
-    n_nucleus = 20
+    n_nucleus = 16
     for _ in range(n_nucleus):
         angle = random.uniform(0, 2 * math.pi)
         dist = random.uniform(0, r * 0.12)
@@ -288,118 +343,40 @@ def generate_react_logo(cx: float, cy: float, r: float, n_points: int = 300) -> 
     remaining = n_points - n_nucleus
     orbit_angles = [0, math.pi / 3, 2 * math.pi / 3]
     for oi, orbit_angle in enumerate(orbit_angles):
-        # Distribute remainder to first orbits
         pts_this_orbit = remaining // 3 + (1 if oi < remaining % 3 else 0)
         for i in range(pts_this_orbit):
             t = 2 * math.pi * i / pts_this_orbit
-            # Ellipse: major=r, minor=r*0.38
             ex = r * math.cos(t)
-            ey = r * 0.38 * math.sin(t)
-            # Rotate by orbit angle
+            ey = r * 0.36 * math.sin(t)
             rx = ex * math.cos(orbit_angle) - ey * math.sin(orbit_angle)
             ry = ex * math.sin(orbit_angle) + ey * math.cos(orbit_angle)
-            # Add slight noise
-            rx += random.gauss(0, 0.5)
-            ry += random.gauss(0, 0.5)
-            points.append((cx + rx, cy + ry))
+            points.append((cx + rx + random.gauss(0, 0.4), cy + ry + random.gauss(0, 0.4)))
 
     return points[:n_points]
 
 
-def generate_ts_logo(cx: float, cy: float, size: float, n_points: int = 300) -> List[Tuple[float, float]]:
-    """Generate point cloud for TypeScript logo (T + S letters in a rounded square)."""
+def generate_node_logo(cx: float, cy: float, size: float, n_points: int = 160) -> List[Tuple[float, float]]:
+    """Generate point cloud for tech hexagon / Node.js logo."""
     points = []
     half = size / 2
 
-    # Rounded square border
-    border_pts = n_points // 3
-    for i in range(border_pts):
-        t = i / border_pts
-        if t < 0.25:
-            x = cx - half + 4 * t * size
-            y = cy - half
-        elif t < 0.5:
-            x = cx + half
-            y = cy - half + 4 * (t - 0.25) * size
-        elif t < 0.75:
-            x = cx + half - 4 * (t - 0.5) * size
-            y = cy + half
-        else:
-            x = cx - half
-            y = cy + half - 4 * (t - 0.75) * size
-        points.append((x + random.gauss(0, 0.3), y + random.gauss(0, 0.3)))
-
-    # "T" letter (left half)
-    t_pts = n_points // 3
-    t_cx = cx - size * 0.15
-    # Horizontal bar of T
-    for i in range(t_pts // 3):
-        x = t_cx - size * 0.22 + (size * 0.44) * i / (t_pts // 3)
-        y = cy - size * 0.18
-        points.append((x + random.gauss(0, 0.3), y + random.gauss(0, 0.3)))
-    # Vertical bar of T
-    for i in range(2 * t_pts // 3):
-        x = t_cx
-        y = cy - size * 0.18 + (size * 0.46) * i / (2 * t_pts // 3)
-        points.append((x + random.gauss(0, 0.3), y + random.gauss(0, 0.3)))
-
-    # "S" letter (right half)
-    s_pts = n_points - len(points)
-    s_cx = cx + size * 0.2
-    for i in range(s_pts):
-        t = i / s_pts
-        # S-curve approximation
-        if t < 0.5:
-            angle = math.pi * 0.8 + t * 2 * math.pi * 0.7
-            x = s_cx + size * 0.1 * math.cos(angle)
-            y = cy - size * 0.12 + t * size * 0.25 + size * 0.06 * math.sin(angle)
-        else:
-            angle = math.pi * 0.2 + (t - 0.5) * 2 * math.pi * 0.7
-            x = s_cx + size * 0.1 * math.cos(angle)
-            y = cy + size * 0.03 + (t - 0.5) * size * 0.25 + size * 0.06 * math.sin(angle)
-        points.append((x + random.gauss(0, 0.3), y + random.gauss(0, 0.3)))
-
-    return points[:n_points]
-
-
-def generate_node_logo(cx: float, cy: float, size: float, n_points: int = 300) -> List[Tuple[float, float]]:
-    """Generate point cloud for Node.js hexagon logo."""
-    points = []
-    half = size / 2
-
-    # Hexagon border
-    hex_pts = n_points // 2
+    # Hexagon outer ring
+    hex_pts = int(n_points * 0.6)
     for i in range(hex_pts):
         angle = 2 * math.pi * i / hex_pts - math.pi / 6
         r = half * 0.95
         x = cx + r * math.cos(angle)
         y = cy + r * math.sin(angle)
-        points.append((x + random.gauss(0, 0.3), y + random.gauss(0, 0.3)))
+        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
 
-    # "N" inside the hexagon
-    n_pts = n_points - hex_pts
-    n_w = size * 0.35
-    n_h = size * 0.4
-    n_left = cx - n_w / 2
-    # Left vertical
-    for i in range(n_pts // 3):
-        t = i / (n_pts // 3)
-        x = n_left
-        y = cy - n_h / 2 + t * n_h
-        points.append((x + random.gauss(0, 0.3), y + random.gauss(0, 0.3)))
-    # Diagonal
-    for i in range(n_pts // 3):
-        t = i / (n_pts // 3)
-        x = n_left + t * n_w
-        y = cy - n_h / 2 + t * n_h
-        points.append((x + random.gauss(0, 0.3), y + random.gauss(0, 0.3)))
-    # Right vertical
-    remaining = n_points - len(points)
-    for i in range(remaining):
-        t = i / max(remaining, 1)
-        x = n_left + n_w
-        y = cy - n_h / 2 + t * n_h
-        points.append((x + random.gauss(0, 0.3), y + random.gauss(0, 0.3)))
+    # Inner triangle / glyph
+    rem = n_points - hex_pts
+    r_in = half * 0.45
+    for i in range(rem):
+        angle = 2 * math.pi * i / rem + math.pi / 2
+        x = cx + r_in * math.cos(angle)
+        y = cy + r_in * math.sin(angle)
+        points.append((x + random.gauss(0, 0.4), y + random.gauss(0, 0.4)))
 
     return points[:n_points]
 
@@ -574,52 +551,49 @@ def generate_info_panel_svg(x_start: float, y_start: float, width: float) -> str
     """Generate the terminal info panel SVG content."""
     lines = []
     row_height = 23
-    font_size = 14
+    font_size = 13
     header_font_size = 13
     label_color = TEXT_DIM
     value_color = TEXT_MUTED
     header_color = ACCENT_CYAN
 
-    # Header: SYSTEM.INFO
-    y = y_start + 30
-    lines.append(f'<text x="{x_start}" y="{y}" fill="{header_color}" '
+    # Header: SYSTEM.INFO (top-left of info panel)
+    lines.append(f'<text x="{x_start}" y="{y_start + 20}" fill="{header_color}" '
                  f'font-size="{header_font_size}" font-family="\'JetBrains Mono\', \'Fira Code\', monospace" '
-                 f'font-weight="600" opacity="0.8">SYSTEM.INFO</text>')
-    y += 8
+                 f'font-weight="700" opacity="0.9">SYSTEM.INFO</text>')
 
-    # Separator line
-    lines.append(f'<line x1="{x_start}" y1="{y}" x2="{x_start + width - 20}" y2="{y}" '
-                 f'stroke="{BORDER_COLOR}" stroke-width="1" opacity="0.5"/>')
-    y += row_height
-
-    # LIVE badge
-    live_x = x_start + width - 80
-    lines.append(f'<circle cx="{live_x}" cy="{y_start + 25}" r="4" fill="{LIVE_RED}">'
+    # LIVE badge (top-right area)
+    live_x = x_start + width - 180
+    lines.append(f'<circle cx="{live_x}" cy="{y_start + 16}" r="4" fill="{LIVE_RED}">'
                  f'<animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>'
                  f'</circle>')
-    lines.append(f'<text x="{live_x + 8}" y="{y_start + 29}" fill="{LIVE_RED}" '
-                 f'font-size="12" font-family="\'JetBrains Mono\', monospace" font-weight="700">LIVE</text>')
+    lines.append(f'<text x="{live_x + 8}" y="{y_start + 20}" fill="{LIVE_RED}" '
+                 f'font-size="11" font-family="\'JetBrains Mono\', monospace" font-weight="700">LIVE</text>')
 
-    # Pill badge with handle
-    pill_x = x_start
-    pill_y = y_start + 3
+    # Pill badge with handle @andresllvh (top-right corner)
+    pill_x = x_start + width - 120
+    pill_y = y_start + 5
     handle = "@andresllvh"
-    lines.append(f'<rect x="{pill_x}" y="{pill_y}" width="120" height="22" rx="11" '
+    lines.append(f'<rect x="{pill_x}" y="{pill_y}" width="110" height="22" rx="11" '
                  f'fill="{ACCENT_PURPLE}" opacity="0.15"/>')
-    lines.append(f'<rect x="{pill_x}" y="{pill_y}" width="120" height="22" rx="11" '
+    lines.append(f'<rect x="{pill_x}" y="{pill_y}" width="110" height="22" rx="11" '
                  f'fill="none" stroke="{ACCENT_PURPLE}" stroke-width="1" opacity="0.4"/>')
-    lines.append(f'<text x="{pill_x + 12}" y="{pill_y + 15}" fill="{ACCENT_PURPLE}" '
-                 f'font-size="12" font-family="\'JetBrains Mono\', monospace" font-weight="500">'
+    lines.append(f'<text x="{pill_x + 11}" y="{pill_y + 15}" fill="{ACCENT_PURPLE}" '
+                 f'font-size="11" font-family="\'JetBrains Mono\', monospace" font-weight="500">'
                  f'{handle}</text>')
 
-    y += 5
+    # Separator line
+    y = y_start + 36
+    lines.append(f'<line x1="{x_start}" y1="{y}" x2="{x_start + width - 10}" y2="{y}" '
+                 f'stroke="{BORDER_COLOR}" stroke-width="1" opacity="0.5"/>')
+    y += row_height
 
     # Data rows with dotted leaders
     for label_text, value_text in INFO_ROWS:
         if not label_text:
             # Spacer with subtle divider
             y += 6
-            lines.append(f'<line x1="{x_start}" y1="{y}" x2="{x_start + width - 20}" y2="{y}" '
+            lines.append(f'<line x1="{x_start}" y1="{y}" x2="{x_start + width - 10}" y2="{y}" '
                          f'stroke="{BORDER_COLOR}" stroke-width="0.5" opacity="0.3" '
                          f'stroke-dasharray="2 4"/>')
             y += row_height - 6
@@ -633,7 +607,7 @@ def generate_info_panel_svg(x_start: float, y_start: float, width: float) -> str
 
         # Value (right-aligned area)
         value_w = len(value_text) * 7.2
-        value_x = x_start + width - 20 - value_w
+        value_x = x_start + width - 10 - value_w
 
         # Dotted leaders between label and value
         leader_start = x_start + label_w + 8
@@ -664,7 +638,6 @@ def generate_info_panel_svg(x_start: float, y_start: float, width: float) -> str
 
 def generate_terminal_frame_svg() -> str:
     """Generate the terminal window frame."""
-    # Terminal window chrome
     lines = []
 
     # Outer frame with rounded corners
@@ -692,23 +665,39 @@ def generate_terminal_frame_svg() -> str:
 
 def generate_portrait_frame_svg(portrait_x: float, portrait_y: float,
                                  portrait_w: float, portrait_h: float) -> str:
-    """Generate the VISUAL.MAP frame around the portrait."""
+    """Generate the VISUAL.MAP frame around the portrait with cyber corner brackets."""
     lines = []
 
-    # Frame border
-    pad = 12
-    fx = portrait_x - pad
-    fy = portrait_y - pad - 20
-    fw = portrait_w + pad * 2
-    fh = portrait_h + pad * 2 + 25
+    # Frame border bounds
+    pad_x = 16
+    pad_top = 28
+    pad_bottom = 16
+    fx = portrait_x - pad_x
+    fy = portrait_y - pad_top
+    fw = portrait_w + pad_x * 2
+    fh = portrait_h + pad_top + pad_bottom
 
+    # Main outer border box
     lines.append(f'<rect x="{fx}" y="{fy}" width="{fw}" height="{fh}" '
-                 f'rx="6" fill="none" stroke="{BORDER_COLOR}" stroke-width="1" opacity="0.6"/>')
+                 f'rx="8" fill="none" stroke="{BORDER_COLOR}" stroke-width="1" opacity="0.6"/>')
 
-    # VISUAL.MAP label
-    lines.append(f'<text x="{fx + 10}" y="{fy + 14}" fill="{ACCENT_CYAN}" '
-                 f'font-size="10" font-family="\'JetBrains Mono\', monospace" '
-                 f'font-weight="600" opacity="0.7">VISUAL.MAP</text>')
+    # VISUAL.MAP header label (inside box at top-left)
+    lines.append(f'<text x="{fx + 12}" y="{fy + 18}" fill="{ACCENT_CYAN}" '
+                 f'font-size="11" font-family="\'JetBrains Mono\', monospace" '
+                 f'font-weight="700" opacity="0.9">VISUAL.MAP</text>')
+
+    # Cyber corner brackets (matching Screenshots 1, 2, 3!)
+    arm = 14
+    c = ACCENT_CYAN
+    sw = 1.8
+    # Top-Left
+    lines.append(f'<path d="M{fx} {fy+arm} V{fy} H{fx+arm}" stroke="{c}" stroke-width="{sw}" fill="none"/>')
+    # Top-Right
+    lines.append(f'<path d="M{fx+fw-arm} {fy} H{fx+fw} V{fx+fw-arm}" stroke="{c}" stroke-width="{sw}" fill="none"/>')
+    # Bottom-Left
+    lines.append(f'<path d="M{fx} {fy+fh-arm} V{fy+fh} H{fx+arm}" stroke="{c}" stroke-width="{sw}" fill="none"/>')
+    # Bottom-Right
+    lines.append(f'<path d="M{fx+fw-arm} {fy+fh} H{fx+fw} V{fx+fh-arm}" stroke="{c}" stroke-width="{sw}" fill="none"/>')
 
     return "\n    ".join(lines)
 
@@ -1008,34 +997,34 @@ def main():
     print(f"  Intro groups: {len(intro_groups)}, Drift bands: {len(drift_bands)}")
 
     # 6. Generate logo point clouds and match via OT
-    print("[6/7] Generating logo morphs (React → TypeScript → Node.js)...")
+    print("[6/7] Generating logo morphs (Code Glyph -> React Atom -> Tech Hexagon)...")
     step = DOT_SIZE + DOT_GAP
     portrait_area_w = BANNER_W * PORTRAIT_AREA_PCT
     portrait_w = PORTRAIT_COLS * step
     portrait_h = PORTRAIT_ROWS * step
     portrait_x = (portrait_area_w - portrait_w) / 2 + 15
-    portrait_y = (BANNER_H - portrait_h) / 2 + 20
+    portrait_y = (BANNER_H - portrait_h) / 2 + 25
 
     logo_cx = portrait_x + portrait_w / 2
     logo_cy = portrait_y + portrait_h / 2
-    logo_r = min(portrait_w, portrait_h) * 0.35
+    logo_r = min(portrait_w, portrait_h) * 0.38
 
-    n_travellers = 120  # Optimized traveller count for clean morph and compact file size
+    n_travellers = 160  # Optimized traveller count for clean morph (Screenshots 1 & 2!)
 
-    react_pts = generate_react_logo(logo_cx, logo_cy, logo_r, n_travellers)
-    ts_pts = generate_ts_logo(logo_cx, logo_cy, logo_r * 1.6, n_travellers)
-    node_pts = generate_node_logo(logo_cx, logo_cy, logo_r * 1.6, n_travellers)
+    glyph_pts = generate_code_glyph(logo_cx, logo_cy, logo_r * 1.5, n_travellers)
+    react_pts = generate_react_logo(logo_cx, logo_cy, logo_r * 1.1, n_travellers)
+    node_pts = generate_node_logo(logo_cx, logo_cy, logo_r * 1.4, n_travellers)
 
     # Match via approximate optimal transport
-    print("  Matching React → TypeScript...")
-    react_to_ts = match_points_ot(react_pts, ts_pts)
-    ts_pts_ordered = [ts_pts[i] for i in react_to_ts]
+    print("  Matching Code Glyph -> React...")
+    glyph_to_react = match_points_ot(glyph_pts, react_pts)
+    react_pts_ordered = [react_pts[i] for i in glyph_to_react]
 
-    print("  Matching TypeScript → Node.js...")
-    ts_to_node = match_points_ot(ts_pts_ordered, node_pts)
-    node_pts_ordered = [node_pts[i] for i in ts_to_node]
+    print("  Matching React -> Node.js...")
+    react_to_node = match_points_ot(react_pts_ordered, node_pts)
+    node_pts_ordered = [node_pts[i] for i in react_to_node]
 
-    traveller_frames = [react_pts, ts_pts_ordered, node_pts_ordered]
+    traveller_frames = [glyph_pts, react_pts_ordered, node_pts_ordered]
 
     # 7. Generate SVGs
     print("[7/7] Generating SVGs...")
