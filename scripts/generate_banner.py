@@ -628,14 +628,12 @@ def generate_portrait_frame_svg(portrait_x: float, portrait_y: float,
     """Generate the VISUAL.MAP frame around the portrait with cyber corner brackets."""
     lines = []
 
-    # Frame border bounds
-    pad_x = 16
-    pad_top = 28
-    pad_bottom = 16
-    fx = portrait_x - pad_x
-    fy = portrait_y - pad_top
-    fw = portrait_w + pad_x * 2
-    fh = portrait_h + pad_top + pad_bottom
+    # Frame border bounds: kept inside the portrait area, below the title
+    # bar and left of the info panel, so it never leaves the banner.
+    fx = 8
+    fy = 46
+    fw = BANNER_W * PORTRAIT_AREA_PCT + 22 - fx
+    fh = BANNER_H - fy - 8
 
     # Main outer border box
     lines.append(f'<rect x="{fx}" y="{fy}" width="{fw}" height="{fh}" '
