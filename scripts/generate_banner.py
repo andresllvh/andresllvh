@@ -915,6 +915,8 @@ def main():
     parser.add_argument("--photo", required=True, help="Path to portrait photo")
     parser.add_argument("--output-dir", default=".", help="Output directory")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    parser.add_argument("--positive", action="store_true",
+                        help="Draw dots on the light areas (positive portrait on the dark terminal)")
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -939,6 +941,10 @@ def main():
     # 3. Dither
     print("[3/7] Floyd-Steinberg dithering (serpentine)...")
     dots = floyd_steinberg_dither(enhanced)
+    if args.positive:
+        # Dots on the light areas: skin and teeth glow, hair and glasses stay dark.
+        # The background is removed in both themes, since it would become solid.
+        dots = ~dots & segment_background(img)
     total = int(np.sum(dots))
     print(f"  Total ink dots: {total} / {PORTRAIT_COLS * PORTRAIT_ROWS} "
           f"({100 * total / (PORTRAIT_COLS * PORTRAIT_ROWS):.1f}%)")
